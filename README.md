@@ -1,3 +1,5 @@
+Course-Recommendation system
+
 Streamlit Interactive Web Application
 This repository contains a Python-based web application built using Streamlit. It is designed to provide a clean, interactive interface for data visualization and processing directly from Python scripts.
 
