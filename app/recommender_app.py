@@ -166,7 +166,8 @@ if pred_button and selected_courses_df.shape[0] > 0:
     course_df = load_courses()
     res_df = pd.merge(res_df, course_df, on=["COURSE_ID"]).drop('COURSE_ID', axis=1)
     st.subheader("📚 Recommended Courses")
-
+    st.write(f"Number of recommendations found: {len(recommendations_df)}")
+    st.write(df.head()) # See what the data actually looks like
     st.dataframe(
         res_df,
         use_container_width=True,
