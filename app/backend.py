@@ -220,15 +220,19 @@ def predict(model_name, user_ids, params):
     sim_threshold = 0.6
     if "sim_threshold" in params:
         sim_threshold = params["sim_threshold"] / 100.0
+    
     idx_id_dict, id_idx_dict = get_doc_dicts()
     sim_matrix = load_course_sims().to_numpy()
+    
     users = []
     courses = []
     scores = []
     res_dict = {}
 
     for user_id in user_ids:
-        # Course Similarity model
+        # =========================
+        # 1. Course Similarity
+        # =========================
         if model_name == models[0]:
             ratings_df = load_ratings()
             user_ratings = ratings_df[ratings_df['user'] == user_id]
@@ -239,10 +243,83 @@ def predict(model_name, user_ids, params):
                     users.append(user_id)
                     courses.append(key)
                     scores.append(score)
-        # TODO: Add prediction model code here
+
+        # =========================
+        # 2. KNN (Collaborative Filtering)
+        # =========================
+        elif model_name == models[4]:  # "KNN"
+            # 1. Train/Load the model on the fly
+            artifacts = train(models[4], params)
+            knn_model = artifacts['model']
+            user_item_matrix = artifacts['matrix']
+            
+            # 2. Reshape user vector for prediction
+            # Note: We need the row index for this user_id in the pivot table
+            if user_id in user_item_matrix.index:
+                user_idx = user_item_matrix.index.get_loc(user_id)
+                user_vector = user_item_matrix.iloc[user_idx].values.reshape(1, -1)
+                
+                # 3. Find neighbors
+                distances, indices = knn_model.kneighbors(user_vector, n_neighbors=10)
+                
+                # 4. Get recommended items from neighbors
+                # Flatten the list of neighbors
+                neighbor_indices = indices.flatten()
+                neighbor_distances = distances.flatten()
+                
+                for i in range(len(neighbor_indices)):
+                    # Get the user_id of the neighbor
+                    neighbor_user_id = user_item_matrix.index[neighbor_indices[i]]
+                    
+                    # Find items this neighbor liked (rating > 0)
+                    neighbor_items = user_item_matrix.loc[neighbor_user_id]
+                    liked_items = neighbor_items[neighbor_items > 0].index.tolist()
+                    
+                    for item in liked_items:
+                        # Simple scoring: 1 - distance (closer is better)
+                        score = 1 - neighbor_distances[i] 
+                        if score > 0: # minimal threshold
+                            users.append(user_id)
+                            courses.append(item)
+                            scores.append(score)
+
+        # =========================
+        # 3. NMF (Matrix Factorization)
+        # =========================
+        elif model_name == models[5]:  # "NMF"
+            # 1. Train/Load model
+            artifacts = train(models[5], params)
+            nmf_model = artifacts['model']
+            user_item_matrix = artifacts['user_item_matrix']
+            
+            if user_id in user_item_matrix.index:
+                # 2. Reconstruct the matrix to find hidden scores
+                W = nmf_model.transform(user_item_matrix)
+                H = nmf_model.components_
+                R_hat = np.dot(W, H)
+                
+                # 3. Get predictions for this specific user
+                user_idx = user_item_matrix.index.get_loc(user_id)
+                user_predictions = R_hat[user_idx]
+                
+                # 4. Filter existing courses and create recommendations
+                # Get indices of top predictions
+                top_indices = user_predictions.argsort()[::-1][:10] # Top 10
+                
+                for idx in top_indices:
+                    item_id = user_item_matrix.columns[idx]
+                    score = user_predictions[idx]
+                    users.append(user_id)
+                    courses.append(item_id)
+                    scores.append(score)
 
     res_dict['USER'] = users
     res_dict['COURSE_ID'] = courses
     res_dict['SCORE'] = scores
     res_df = pd.DataFrame(res_dict, columns=['USER', 'COURSE_ID', 'SCORE'])
+    
+    # Clean up duplicates (keep highest score)
+    if not res_df.empty:
+        res_df = res_df.sort_values('SCORE', ascending=False).drop_duplicates(subset=['COURSE_ID'])
+        
     return res_df
