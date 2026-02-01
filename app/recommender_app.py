@@ -17,7 +17,7 @@ st.set_page_config(
 
 # ------- Functions ------
 # Load datasets
-@st.cache_data
+#@st.cache_data
 def load_ratings():
     return backend.load_ratings()
 
