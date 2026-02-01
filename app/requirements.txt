@@ -1,0 +1,6 @@
+numpy
+pandas
+streamlit-aggrid
+scikit-learn
+streamlit==1.19.0
+altair==4.2.2
