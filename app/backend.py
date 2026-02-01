@@ -16,23 +16,28 @@ models = ("Course Similarity",
           "Regression with Embedding Features",
           "Classification with Embedding Features")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_ratings():
-    return pd.read_csv("ratings.csv")
+    csv_path = os.path.join(BASE_DIR, "ratings.csv")
+    return pd.read_csv(csv_path)
 
 
 def load_course_sims():
-    return pd.read_csv("sim.csv")
+    csv_path = os.path.join(BASE_DIR, "sim.csv")
+    return pd.read_csv(csv_path)
 
 
 def load_courses():
-    df = pd.read_csv("course_processed.csv")
+    csv_path = os.path.join(BASE_DIR, "course_processed.csv")
+    df = pd.read_csv(csv_path)
     df['TITLE'] = df['TITLE'].str.title()
     return df
 
 
 def load_bow():
-    return pd.read_csv("courses_bows.csv")
+    csv_path = os.path.join(BASE_DIR, "courses_bows.csv")
+    return pd.read_csv(csv_path)
 
 
 def add_new_ratings(new_courses):
