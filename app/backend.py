@@ -78,7 +78,7 @@ def course_similarity_recommendations(idx_id_dict, id_idx_dict, enrolled_course_
         for unselect_course in unselected_course_ids:
             if enrolled_course in id_idx_dict and unselect_course in id_idx_dict:
                 idx1 = id_idx_dict[enrolled_course]
-                idx2 = id_idx_dict[str(unselect_course)]
+                idx2 = id_idx_dict[unselect_course]
                 sim = sim_matrix[idx1][idx2]
                 if unselect_course not in res:
                     res[unselect_course] = sim
